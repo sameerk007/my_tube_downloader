@@ -1,5 +1,6 @@
 import streamlit as st
-from pytube import Playlist ,YouTube
+from pytube import Playlist ,YouTube 
+from pytube.cli import on_progress
 import os
 
 # Function to download a range of videos from a YouTube playlist with a specific resolution
@@ -30,13 +31,18 @@ def download_playlist_range(playlist_url, output_path, start_index, end_index, r
             streams = video.streams.filter(res=resolution)
             if streams:
                 # Choose the first stream (highest quality) with the specified resolution
-                selected_stream = streams[0]
-                selected_stream.download(output_path)
+                selected_stream = streams[0]    
+                # Get the file size to calculate the progress 
+                selected_stream.download(output_path, filename=f"{video.title}.mp4",)
+
                 st.write(f'Download completed: {video.title}')
+               
             else:
                 st.write(f'Video "{video.title}" does not have a {resolution} stream. Trying for best resolution')
-                video.streams.get_highest_resolution().download(output_path)
+                selected_stream = video.streams.get_highest_resolution()
+                selected_stream.download(output_path, filename=f"{video.title}.mp4")
                 st.write(f'Download completed: {video.title}')
+
     
 
 
@@ -58,20 +64,21 @@ def main():
             try:
                 download_playlist_range(playlist_url, download_path, start_index, end_index, resolution=desired_resolution)
             except:
-                video = YouTube(playlist_url)
+                video = YouTube(playlist_url,on_progress_callback=on_progress)
                 st.write(f'Downloading: {video.title}')
                 # Filter streams by resolution
                 streams = video.streams.filter(res=desired_resolution)
                 if streams:
                     # Choose the first stream (highest quality) with the specified resolution
                     selected_stream = streams[0]
-                    selected_stream.download(download_path)
+                    selected_stream.download(download_path, filename=f"{video.title}.mp4")
+
                     st.write(f'Download completed: {video.title}')
                 else:
                     st.write(f'Video "{video.title}" does not have a {desired_resolution} stream. Trying for best resolution')
-                    video.streams.get_highest_resolution().download(download_path)
+                    selected_stream = video.streams.get_highest_resolution()
+                    selected_stream.download(download_path, filename=f"{video.title}.mp4")
                     st.write(f'Download completed: {video.title}')
-                    st.write("Download completed!")
 
 if __name__ == "__main__":
     main()
